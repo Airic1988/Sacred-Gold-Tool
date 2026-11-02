@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sacred Gold Complete Tool</title>
+<style>
+:root{--bg:#07101f;--panel:#101b2f;--line:#263752;--txt:#f5f7fb;--muted:#9fb0c8;--gold:#f6c453;--green:#65d98a;--blue:#6db7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:20px 16px 10px;position:sticky;top:0;background:rgba(7,16,31,.96);z-index:20;border-bottom:1px solid var(--line)}
+h1{font-size:23px;margin:0 0 5px}.gold{color:var(--gold)}.sub,.hint,.status{color:var(--muted);font-size:13px}
+nav{display:flex;gap:7px;margin-top:14px;overflow:auto;padding-bottom:2px}.tab{white-space:nowrap;border:1px solid var(--line);background:#0c1729;color:#dce7f7;border-radius:10px;padding:10px 13px;font-weight:700}.tab.active{background:#213451;color:white}
+main{max-width:900px;margin:auto;padding:14px}.panel{display:none}.panel.active{display:block}
+.search{width:100%;font-size:16px;padding:14px;border-radius:12px;border:1px solid var(--line);background:#0b1527;color:white;outline:none}
+.suggestWrap{position:relative}.suggestions{position:absolute;z-index:50;left:0;right:0;top:100%;background:#0b1527;border:1px solid var(--line);border-radius:0 0 12px 12px;max-height:340px;overflow:auto}
+.suggestion{padding:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between}.de{color:var(--green)}
+.grid{display:grid;gap:11px;margin-top:12px}.card,.box{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:14px}
+.head{display:flex;gap:14px;align-items:center}.sprite{width:100px;height:100px;image-rendering:auto}.num{color:var(--muted);font-size:13px}
+h2,h3{margin:3px 0 8px}.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:5px 8px;border-radius:8px;background:#1b2b45;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.stat{background:#0a1425;padding:9px;border-radius:9px;text-align:center}.stat b{display:block;font-size:18px}
+.btn{display:inline-block;text-decoration:none;border:0;border-radius:10px;padding:11px 13px;background:var(--gold);color:#101010;font-weight:800;margin:5px 5px 0 0}.btn.secondary{background:#dce8f7}.ok{border-left:4px solid var(--green);padding:11px;background:#10271b;border-radius:8px;margin:10px 0}.warn{border-left:4px solid var(--gold);padding:11px;background:#2a2110;border-radius:8px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line)}th{color:var(--muted)}
+@media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}.sprite{width:86px;height:86px}}
+</style></head>
+<body>
+<header><h1>Sacred Gold <span class="gold">Kompletttool</span></h1>
+<div class="sub">Complete v1.05 · Deutsch + Englisch · 493 Pokémon · TMs/HMs · Items · iPhone-optimiert</div>
+<nav><button class="tab active" data-tab="pokemon">Pokémon</button><button class="tab" data-tab="tm">TMs/HMs</button><button class="tab" data-tab="items">Items</button><button class="tab" data-tab="guide">Sacred-Gold-Daten</button></nav>
+</header>
+<main>
+<section id="pokemon" class="panel active">
+ <div class="suggestWrap"><input id="psearch" class="search" placeholder="Pokémon suchen – Englisch oder Deutsch, z. B. Tyranitar / Despotar" autocomplete="off"><div id="psuggest" class="suggestions" hidden></div></div>
+ <div id="pstatus" class="status" style="margin-top:10px">Pokédex wird geladen …</div><div id="presult"></div>
+</section>
+<section id="tm" class="panel">
+ <input id="tmsearch" class="search" placeholder="TM suchen – Nummer, Englisch oder Deutsch">
+ <div class="hint" style="margin-top:8px">Die Fundortangaben kennzeichnen Sacred-Gold-Änderungen. „Unverändert“ bedeutet: Fundort wie HeartGold/SoulSilver.</div>
+ <div id="tmlist"></div>
+</section>
+<section id="items" class="panel">
+ <input id="isearch" class="search" placeholder="Item suchen – Englisch oder Deutsch">
+ <div id="ilist"></div>
+</section>
+<section id="guide" class="panel">
+ <div class="ok"><b>Datenbasis:</b> Sacred Gold / Storm Silver v1.05 Complete von Drayano. Für hack-spezifische Werte, Fähigkeiten, Movesets, TM-Kompatibilität und Begegnungen führt die Pokémon-Suche direkt zur durchsuchbaren Sacred-Gold-Datenbank.</div>
+ <div class="box"><h3>Wichtig zur Genauigkeit</h3><p class="hint">Allgemeine deutsche Namen und Basisinformationen werden über PokéAPI geladen. Sacred Gold verändert bei einigen Pokémon Werte, Typen, Fähigkeiten und Attacken. Deshalb werden diese Änderungen nicht mit normalen HeartGold-Daten vermischt, sondern über den Sacred-Gold-Datensatz aufgerufen.</p>
+ <a class="btn" target="_blank" href="https://romhackguides.com/hacks/sacred-gold-storm-silver/">Sacred-Gold-Guide öffnen</a></div>
+</section>
+</main>
+<script>
+const SG='https://romhackguides.com/hacks/sacred-gold-storm-silver/';
+let P=[];
+const esc=s=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const cap=s=>s? s[0].toUpperCase()+s.slice(1):'';
+const typeDE={normal:'Normal',fire:'Feuer',water:'Wasser',electric:'Elektro',grass:'Pflanze',ice:'Eis',fighting:'Kampf',poison:'Gift',ground:'Boden',flying:'Flug',psychic:'Psycho',bug:'Käfer',rock:'Gestein',ghost:'Geist',dragon:'Drache',dark:'Unlicht',steel:'Stahl',fairy:'Fee'};
+const statDE={'hp':'KP','attack':'Angriff','defense':'Verteidigung','special-attack':'Sp.-Angriff','special-defense':'Sp.-Vert.','speed':'Initiative'};
+const natureMap=[
+ ['Adamant','Hart','+Angriff','−Sp.-Angriff'],['Jolly','Froh','+Initiative','−Sp.-Angriff'],
+ ['Modest','Mäßig','+Sp.-Angriff','−Angriff'],['Timid','Scheu','+Initiative','−Angriff'],
+ ['Impish','Pfiffig','+Verteidigung','−Sp.-Angriff'],['Bold','Kühn','+Verteidigung','−Angriff'],
+ ['Careful','Sacht','+Sp.-Vert.','−Sp.-Angriff'],['Calm','Still','+Sp.-Vert.','−Angriff']
+];
+function recommendNature(stats){
+ let a=Object.fromEntries(stats.map(x=>[x.stat.name,x.base_stat]));
+ let out=[];
+ if(a.attack>=a['special-attack']) out.push(natureMap[0]); else out.push(natureMap[2]);
+ if(a.speed>=80) out.push(a.attack>=a['special-attack']?natureMap[1]:natureMap[3]);
+ else if(a.defense>=a['special-defense']) out.push(a.attack>=a['special-attack']?natureMap[4]:natureMap[5]);
+ else out.push(a.attack>=a['special-attack']?natureMap[6]:natureMap[7]);
+ return out;
+}
+async function loadPokemon(){
+ try{
+  let r=await fetch('https://pokeapi.co/api/v2/pokemon-species?limit=493');let j=await r.json();
+  let chunks=[]; for(let i=0;i<j.results.length;i+=40) chunks.push(j.results.slice(i,i+40));
+  for(const c of chunks){
+   let rows=await Promise.all(c.map(async(x)=>{
+    let s=await (await fetch(x.url)).json();
+    let de=s.names.find(n=>n.language.name==='de')?.name||cap(s.name);
+    return {id:s.id,en:cap(s.name),de};
+   })); P.push(...rows);
+  }
+  P.sort((a,b)=>a.id-b.id);document.querySelector('#pstatus').textContent='493 Pokémon geladen. Suche auf Deutsch oder Englisch.';
+ }catch(e){document.querySelector('#pstatus').textContent='Pokédex konnte nicht geladen werden. Internetverbindung prüfen.'}
+}
+async function showPokemon(p){
+ document.querySelector('#psearch').value=p.en;document.querySelector('#psuggest').hidden=true;
+ document.querySelector('#presult').innerHTML='<div class="status">Pokémon-Daten werden geladen …</div>';
+ try{
+  let d=await (await fetch('https://pokeapi.co/api/v2/pokemon/'+p.id)).json();
+  let s=await (await fetch('https://pokeapi.co/api/v2/pokemon-species/'+p.id)).json();
+  let ev=s.evolution_chain?.url||'';
+  let nats=recommendNature(d.stats);
+  let types=d.types.map(x=>`<span class="chip">${cap(x.type.name)} · ${typeDE[x.type.name]||cap(x.type.name)}</span>`).join('');
+  let stats=d.stats.map(x=>`<div class="stat">${statDE[x.stat.name]||x.stat.name}<b>${x.base_stat}</b></div>`).join('');
+  let abilities=d.abilities.map(x=>cap(x.ability.name.replaceAll('-',' '))+(x.is_hidden?' (Hidden)':'')).join(', ');
+  let ns=nats.map(n=>`<span class="chip"><b>${n[0]} · ${n[1]}</b> ${n[2]} / ${n[3]}</span>`).join('');
+  let q=encodeURIComponent(p.en);
+  document.querySelector('#presult').innerHTML=`<div class="card">
+   <div class="head"><img class="sprite" src="${d.sprites.other['official-artwork'].front_default||d.sprites.front_default}"><div><div class="num">#${String(p.id).padStart(3,'0')}</div><h2>${esc(p.en)}</h2><div class="de">${esc(p.de)}</div><div class="chips" style="margin-top:8px">${types}</div></div></div>
+   <h3>Basiswerte</h3><div class="stats">${stats}</div>
+   <h3 style="margin-top:15px">Fähigkeiten</h3><div>${esc(abilities)}</div>
+   <h3 style="margin-top:15px">Sinnvolle Wesen</h3><div class="chips">${ns}</div>
+   <div class="warn"><b>Sacred-Gold-Hinweis:</b> Bei Pokémon, die in Complete v1.05 verändert wurden, können Werte, Typ, Fähigkeiten und Moves vom normalen Gen-IV-Datensatz oben abweichen. Nutze deshalb für die endgültige Spielangabe den Sacred-Gold-Datensatz.</div>
+   <a class="btn" target="_blank" href="${SG}?q=${q}">Fundorte + SG-Werte + Moveset</a>
+   <a class="btn secondary" target="_blank" href="${SG}?q=${q}">TM/HM-Kompatibilität</a>
+  </div>`;
+ }catch(e){document.querySelector('#presult').innerHTML='<div class="warn">Daten konnten nicht geladen werden.</div>'}
+}
+function pInput(){
+ let q=norm(document.querySelector('#psearch').value);
+ let a=q?P.filter(x=>norm(x.en).includes(q)||norm(x.de).includes(q)).slice(0,12):[];
+ let m=document.querySelector('#psuggest');m.innerHTML=a.map(x=>`<div class="suggestion" data-id="${x.id}"><span><b>${x.en}</b> · <span class="de">${x.de}</span></span><span>#${String(x.id).padStart(3,'0')}</span></div>`).join('');m.hidden=!a.length;
+ m.querySelectorAll('.suggestion').forEach(el=>el.onclick=()=>showPokemon(P.find(x=>x.id==el.dataset.id)));
+}
+const TMS=[
+['TM01','Focus Punch','Power-Punch','Saffron City','Zusätzlich in Saffron City kaufbar'],
+['TM02','Dragon Claw','Drachenklaue','Goldenrod Lottery','Von Route 26 entfernt; Goldenrod-Lotterie'],
+['TM03','Water Pulse','Aquawelle','Route 32 Pokémon Center','Von einem Angler im Pokémon Center'],
+['TM04','Calm Mind','Gedankengut','Goldenrod City Pokémon Center','Von einem Mann im Pokémon Center'],
+['TM05','Roar','Brüller','Unverändert','Fundort wie HG/SS'],
+['TM06','Toxic','Toxin','Cliff Cave','Nach Sieg über Petrel'],
+['TM07','Hail','Hagelsturm','Mahogany Town','Zusätzlich im Shop kaufbar'],
+['TM08','Bulk Up','Protzer','Goldenrod City Pokémon Center','Von einem Mann im Pokémon Center'],
+['TM09','Bullet Seed','Kugelsaat','Unverändert','Fundort wie HG/SS'],
+['TM10','Hidden Power','Kraftreserve','Ruins of Alph','Belohnung für 7 verschiedene Icognito'],
+['TM11','Sunny Day','Sonnentag','Mahogany Town','Zusätzlich im Shop kaufbar'],
+['TM12','Taunt','Verhöhner','Burned Tower entfernt','Exemplar im Burned Tower wurde entfernt']
+];
+function renderTM(){
+ let q=norm(document.querySelector('#tmsearch').value);let a=TMS.filter(x=>!q||x.some(v=>norm(v).includes(q)));
+ document.querySelector('#tmlist').innerHTML='<div class="card"><table><tr><th>TM</th><th>Attacke</th><th>Fundort</th></tr>'+a.map(x=>`<tr><td><b>${x[0]}</b></td><td>${x[1]}<br><span class="de">${x[2]}</span></td><td>${x[3]}<br><span class="hint">${x[4]}</span></td></tr>`).join('')+'</table><div class="hint" style="margin-top:10px">Weitere TMs werden über die vollständige Sacred-Gold-Datenbank geöffnet.</div><a class="btn" target="_blank" href="'+SG+'?q=TM">Alle Sacred-Gold-TMs öffnen</a></div>';
+}
+const ITEMS=[
+['Fire Stone','Feuerstein','Mehrfach vor der Johto-Liga erhältlich'],
+['Water Stone','Wasserstein','Mehrfach vor der Johto-Liga erhältlich'],
+['Thunder Stone','Donnerstein','Mehrfach vor der Johto-Liga erhältlich'],
+['Leaf Stone','Blattstein','Mehrfach vor der Johto-Liga erhältlich'],
+['Moon Stone','Mondstein','Mehrfach erhältlich'],
+['Sun Stone','Sonnenstein','Mehrfach erhältlich'],
+['Dusk Stone','Finsterstein','Vor der Johto-Liga erhältlich'],
+['Dawn Stone','Funkelstein','Vor der Johto-Liga erhältlich'],
+['Shiny Stone','Leuchtstein','Vor der Johto-Liga erhältlich'],
+['Metal Coat','Metallmantel','Für Entwicklungen verfügbar'],
+['Protector','Schützer','Für Entwicklungen verfügbar'],
+['Electirizer','Stromisierer','Für Entwicklungen verfügbar'],
+['Magmarizer','Magmaisierer','Für Entwicklungen verfügbar'],
+['Dubious Disc','Dubiosdisc','Für Entwicklungen verfügbar'],
+['Upgrade','Up-Grade','Für Entwicklungen verfügbar']
+];
+function renderItems(){
+ let q=norm(document.querySelector('#isearch').value);let a=ITEMS.filter(x=>!q||x.some(v=>norm(v).includes(q)));
+ document.querySelector('#ilist').innerHTML='<div class="grid">'+a.map(x=>`<div class="card"><h3>${x[0]} · <span class="de">${x[1]}</span></h3><div class="hint">${x[2]}</div><a class="btn" target="_blank" href="${SG}?q=${encodeURIComponent(x[0])}">Exakten SG-Fundort öffnen</a></div>`).join('')+'</div>';
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));if(b.dataset.tab==='tm')renderTM();if(b.dataset.tab==='items')renderItems()});
+document.querySelector('#psearch').oninput=pInput;document.querySelector('#tmsearch').oninput=renderTM;document.querySelector('#isearch').oninput=renderItems;
+document.addEventListener('click',e=>{if(!e.target.closest('.suggestWrap'))document.querySelector('#psuggest').hidden=true});
+renderTM();renderItems();loadPokemon();
+</script></body></html>
